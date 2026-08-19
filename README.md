@@ -6,7 +6,9 @@ through a per-track timer, and writes an auditable bilingual HSE incident record
 The frozen architectural contract is [EDGESENTINEL_BUILD_SPEC.md](EDGESENTINEL_BUILD_SPEC.md).
 Change decisions there first, then in code.
 
-**Current state:** M1 (vision core) implemented. M2–M4 not started.
+**Current state:** M1 (vision core), M2 (backend + persistence) and M3 (bilingual HSE agent)
+implemented and hardware-verified, plus email alerting on violation. M4 (dashboard + ESP32 alarm)
+not started.
 
 ---
 
