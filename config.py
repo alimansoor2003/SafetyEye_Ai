@@ -66,6 +66,16 @@ class HardwareConfig(BaseModel):
     serial_baud: int = 115200
 
 
+class EmailAlertConfig(BaseModel):
+    enabled: bool = False
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    sender: str = ""
+    recipients: list[str] = []
+    attach_evidence: bool = True
+    min_risk_only: bool = False   # reserved: alert only above a risk level once enriched
+
+
 class ServerConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8000
@@ -92,6 +102,7 @@ class Config(BaseModel):
     agent: AgentConfig
     hardware: HardwareConfig
     server: ServerConfig = ServerConfig()
+    email_alerts: EmailAlertConfig = EmailAlertConfig()
     storage: StorageConfig
     locale: LocaleConfig
 

@@ -11,6 +11,7 @@ TESTS = [
     "test_pipeline_smoke.py",
     "test_backend_m2.py",
     "test_agent_m3.py",
+    "test_notify.py",
 ]
 
 

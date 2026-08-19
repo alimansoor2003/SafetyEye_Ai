@@ -48,6 +48,17 @@ hardware:
   serial_port: COM3            # Windows; use /dev/ttyUSB0 on Linux
   serial_baud: 115200
 
+email_alerts:
+  enabled: true
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  sender: ""                   # blank = use SMTP_USERNAME
+  recipients:
+    - alimansoor2003a@gmail.com
+  attach_evidence: true
+  # Credentials are NOT here. Set SMTP_USERNAME and SMTP_PASSWORD in .env — for Gmail,
+  # SMTP_PASSWORD must be a Google App Password, not the account password.
+
 server:
   host: 127.0.0.1
   port: 8000

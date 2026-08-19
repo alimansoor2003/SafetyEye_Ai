@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from agent.client import HSEAgent
 from agent.worker import EnrichmentPool
 from backend.db import open_database
+from backend.notify import EmailAlerter
 from backend.pipeline import FrameEvent, IncidentDraft, VisionPipeline, zone_code
 from backend.routes import check_token, expected_token, router
 from backend.schemas import SystemStatus
@@ -63,12 +64,28 @@ async def lifespan(app: FastAPI):
     app.state.evidence_dir = evidence_dir
     app.state.manager = ConnectionManager()
     app.state.queue = asyncio.Queue(maxsize=QUEUE_MAXSIZE)
+    app.state.side_tasks: set[asyncio.Task] = set()
     app.state.pipeline = VisionPipeline(cfg, camera, evidence_dir)
+
+    app.state.alerter = EmailAlerter(cfg.email_alerts, cfg.locale.display_timezone)
+    if cfg.email_alerts.enabled:
+        if app.state.alerter.configured:
+            log.info("email alerts -> %s", ", ".join(cfg.email_alerts.recipients))
+        else:
+            log.warning("email alerts enabled but not usable: %s", app.state.alerter.why_not())
 
     app.state.pool = _build_pool(cfg, db, app.state.manager, camera)
     if app.state.pool is not None:
         app.state.pool.start()
-        await app.state.pool.requeue_pending()
+        # A backlog drain can cost one API request per pending row. During a demo on a metered
+        # key that silently spends the whole budget before anyone stands in front of the camera.
+        if os.getenv("EDGESENTINEL_SKIP_REQUEUE", "").strip() in ("1", "true", "yes"):
+            log.warning(
+                "EDGESENTINEL_SKIP_REQUEUE set — %d pending incident(s) left untouched",
+                await db.count_pending(),
+            )
+        else:
+            await app.state.pool.requeue_pending()
     else:
         pending = await db.count_pending()
         if pending:
@@ -88,6 +105,8 @@ async def lifespan(app: FastAPI):
         app.state.pipeline.stop()
         if app.state.pool is not None:
             await app.state.pool.stop()
+        for task in list(app.state.side_tasks):
+            task.cancel()
         for task in app.state.tasks:
             task.cancel()
         for task in app.state.tasks:
@@ -163,6 +182,13 @@ async def _replay_history(websocket: WebSocket) -> None:
             })
 
 
+def _spawn(app: FastAPI, coro) -> None:
+    """Track a fire-and-forget task so shutdown cancels it instead of orphaning it."""
+    task = asyncio.create_task(coro)
+    app.state.side_tasks.add(task)
+    task.add_done_callback(app.state.side_tasks.discard)
+
+
 def _build_pool(cfg, db, manager, camera) -> EnrichmentPool | None:
     """A missing key disables enrichment rather than killing the app.
 
@@ -209,6 +235,14 @@ async def _drain(app: FastAPI) -> None:
                 report_id = await _persist_incident(db, manager, camera, evidence_dir, item)
                 if app.state.pool is not None:
                     app.state.pool.submit(report_id)
+                # Fire-and-forget: SMTP latency must not stall the drain behind the next frame.
+                if app.state.alerter.configured:
+                    record = await db.get_incident(report_id)
+                    if record is not None:
+                        record["zone_label_en"] = camera.zone_label_en
+                        _spawn(app, app.state.alerter.send_incident(
+                            record, evidence_dir / f"{report_id}.jpg"
+                        ))
         except asyncio.CancelledError:
             raise
         except Exception:

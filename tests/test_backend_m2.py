@@ -66,6 +66,9 @@ def build_env(workdir: Path) -> Path:
     cfg["cameras"][0]["capture_fps"] = CLIP_FPS
     cfg["storage"]["evidence_dir"] = str(workdir / "evidence")
     cfg["storage"]["db_path"] = str(workdir / "test.db")
+    # The app's lifespan calls load_dotenv, so a configured .env would make every test run send
+    # real alert emails for its synthetic violations. Alerting is covered by test_notify.py.
+    cfg["email_alerts"]["enabled"] = False
     path = workdir / "config.yaml"
     path.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
     return path
