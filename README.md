@@ -1,4 +1,4 @@
-# safetyeye AI
+# SafetyEye AI
 
 Industrial PPE safety monitoring. Detects hardhat / safety-vest violations on live video, holds them
 through a per-track timer, and writes an auditable bilingual HSE incident record.
