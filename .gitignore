@@ -1,0 +1,20 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+models/*.pt
+datasets/
+runs/
+yolov8*.pt
+# Covers -journal, -wal and -shm; SQLite's WAL sidecars are not source.
+data/*.db*
+!data/.gitkeep
+
+evidence/*
+!evidence/.gitkeep
+
+*.log
+.vscode/
+.idea/

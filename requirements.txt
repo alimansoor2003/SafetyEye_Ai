@@ -1,0 +1,33 @@
+# torch + torchvision are NOT listed here on purpose.
+# Install them first from the CUDA wheel index matching your GPU:
+#   RTX 20/30/40 : pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#   RTX 50       : pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# Installing them via this file would pull the CPU-only build.
+
+ultralytics==8.3.0
+# ByteTrack imports `lap`; ultralytics does not install it. Without this, model.track() raises
+# ModuleNotFoundError at the first frame. lapx is the fork that ships Windows wheels.
+lapx==0.9.4
+opencv-python==4.10.0.84
+numpy==1.26.4
+pyyaml==6.0.2
+python-dotenv==1.0.1
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.13.4
+websockets==13.1
+aiosqlite==0.20.0
+
+# Amendment A5: the HSE agent runs on Gemini, not Anthropic. google-genai requires pydantic>=2.11,
+# which is why the pin above is 2.13.4 rather than the 2.9.2 the M1/M2 milestones used.
+google-genai==2.18.1
+# Amendment A6: cross-provider fallback when the Gemini budget is exhausted.
+anthropic==0.40.0
+
+paho-mqtt==2.1.0
+pyserial==3.5
+
+# NOTE: `roboflow` is deliberately NOT listed here. It depends on opencv-python-headless, which
+# shadows opencv-python and makes cv2.imshow raise — breaking `vision/run.py --show`. It is only
+# needed to fetch the training set. See README "Getting the weights" for the safe install order.

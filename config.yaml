@@ -1,0 +1,64 @@
+cameras:
+  - camera_id: CAM-01
+    zone_id: ZONE-01-MAIN-ENTRANCE
+    zone_label_en: "Main Entrance"
+    zone_label_ar: "المدخل الرئيسي"
+    source: 0                  # int = webcam index, str = RTSP/file path
+    capture_width: 1920
+    capture_height: 1080
+    capture_fps: 30
+
+detection:
+  weights: models/ppe_yolov8.pt
+  device: cuda:0
+  imgsz: 640
+  conf_threshold: 0.75
+  iou_threshold: 0.45
+  tracker: bytetrack.yaml
+  monitored_violations: [NO-Hardhat, NO-Safety Vest]
+
+violation:
+  persist_seconds: 2.0         # must hold this long to fire
+  clear_seconds: 1.5           # must be clean this long to reset
+  track_lost_seconds: 1.0      # unseen this long -> discard the arming timer
+  cooldown_seconds: 120        # per (track_id, violation_type)
+  max_incidents_per_minute: 10 # global circuit breaker
+
+stream:
+  width: 1280
+  height: 720
+  fps: 15
+  jpeg_quality: 70
+
+agent:
+  model: gemini-3.7-flash
+  fallback_model: gemini-3.6-flash    # 2.5-flash is retired: 404 for new users
+  claude_model: claude-sonnet-5       # cross-provider escape hatch when Gemini quota is spent
+  use_fallback: false
+  max_tokens: 1500
+  worker_count: 2
+  max_retries: 4
+  backoff_base_seconds: 2
+
+hardware:
+  mqtt_enabled: true
+  mqtt_host: 127.0.0.1
+  mqtt_port: 1883
+  serial_fallback: true
+  serial_port: COM3            # Windows; use /dev/ttyUSB0 on Linux
+  serial_baud: 115200
+
+server:
+  host: 127.0.0.1
+  port: 8000
+  history_replay: 25           # incidents pushed to a client on WS connect
+
+storage:
+  db_path: data/edgesentinel.db
+  evidence_dir: evidence
+  retention_days: 30
+  blur_faces: false
+  persist_detections: true     # only rows for non-compliant tracks, at the 5Hz event rate
+
+locale:
+  display_timezone: Asia/Riyadh
